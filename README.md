@@ -86,14 +86,14 @@ Use `FixedIndexColorProvider` when you need repeatable colors from a custom pale
 - FixedIndexColorProvider
     Returns colors based on this fixed list:
 
-            | Index | Color |
-            |---|---|
-            | 0 | Green |
-            | 1 | Blue |
-            | 2 | Red |
-            | 3 | Magenta |
-            | 4 | Cyan |
-            | 5 | Yellow |
+| Index | Color |
+|---|---|
+| 0 | Green |
+| 1 | Blue |
+| 2 | Red |
+| 3 | Magenta |
+| 4 | Cyan |
+| 5 | Yellow |
 
     looping back if numbers higher than 5 are used
 
