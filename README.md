@@ -25,7 +25,8 @@ public interface IColorProvider<T>
 |---|---|---|
 | RegexColorProvider | Regex pattern matching | Yes |
 | IndexedColorProvider | User-defined color sequence | Yes |
-| FixedIndexColorProvider | Built-in color sequence | No |
+| FixedIndexColorProvider | Hard-Coded color sequence | No |
+| GeneratedColorProvider | Deterministic, destinct sequence | No |
 
 ### Choosing a Provider
 
@@ -36,14 +37,17 @@ Example:
 - Search highlighting
 - Syntax coloring
 
-Use `IndexedColorProvider` when you need repeatable colors from a custom palette, indexed by with an int.
+Use `IndexedColorProvider` when you need repeatable colors from a custom palette, indexed with an int.
 
 Example:
 - Multiple cameras
 - Data series
 - Objects in a visualization
 
-Use `FixedIndexColorProvider` when you need repeatable colors from a custom palette, but don't need specific colors.
+Use `FixedIndexColorProvider` when you need repeatable colors from standard CV palette: G, B, R, M, C, Y, then repeat.  Very Fast.
+
+Use `GeneratedColorProvider` when you want many visually distinct colors, generated deterministicly at runtime.
+
 
 ### Provider Details
 - RegexColorProvider
@@ -84,7 +88,7 @@ Use `FixedIndexColorProvider` when you need repeatable colors from a custom pale
         ```
 
 - FixedIndexColorProvider
-    Returns colors based on this fixed list:
+    Returns colors based on this fixed, reapeating list:
 
 | Index | Color |
 |---|---|
@@ -94,18 +98,30 @@ Use `FixedIndexColorProvider` when you need repeatable colors from a custom pale
 | 3 | Magenta |
 | 4 | Cyan |
 | 5 | Yellow |
-
-    looping back if numbers higher than 5 are used
+| 6 | Green (again) |
+| 7 | Blue (again) |
 
         Basic usage
         ```csharp
         colors = new FixedIndexColorProvider();
-        colors.AddPattern(new Regex(".*Hello.*", RegexOptions.Compiled), Color.Green);
-        colors.AddPattern(new Regex(".*Goodbye.*", RegexOptions.Compiled), Color.Red);
 
         Color color1 = colors.GetColor(1);     // Blue
         Color color2 = colors.GetColor(4);     // Cyan
         Color color3 = colors.GetColor(9);     // Magenta
+        ```
+
+- GeneratedColorProvider
+   - Returns generated colors using golden ratio stepping through HSV color space.
+   - Each index shall always return the same color, given the same contructor parameters
+   - Sequential colors shall be disimilar from each other
+   - Constructor includes parameters for Hue and Saturation to tune pallete.
+
+        Basic usage
+        ```csharp
+        colors = new GeneratedColorProvider(0.75, 0.95); // Default constructor values.  Not omitted for demonstration's sake.
+
+        Color color1 = colors.GetColor(1);     // \ Disimilar from each
+        Color color2 = colors.GetColor(2);     // /       other
         ```
 
 ## Installation

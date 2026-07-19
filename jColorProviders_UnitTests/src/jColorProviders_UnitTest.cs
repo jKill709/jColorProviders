@@ -5,7 +5,7 @@ using jColorProviders;
 
 namespace jColorProviders.Tests;
 
-public class PatternColorProviderTests
+public class RegexColorProviderTests
 {
     [Fact]
     public void GetColor_NoPatterns_ReturnsBlack()
@@ -485,4 +485,249 @@ public class IndexedColorProviderTests
     }
 
     #endregion
+}
+
+public class GeneratedColorProviderTests
+{
+    [Fact]
+    public void SameIndexAlwaysReturnsSameColor()
+    {
+        var provider = new GeneratedColorProvider();
+
+        Color first = provider.GetColor(42);
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.Equal(first, provider.GetColor(42));
+        }
+    }
+
+    [Fact]
+    public void DifferentInstancesWithSameParametersReturnSameColors()
+    {
+        var provider1 = new GeneratedColorProvider();
+        var provider2 = new GeneratedColorProvider();
+
+        for (int i = 0; i < 500; i++)
+        {
+            Assert.Equal(provider1.GetColor(i), provider2.GetColor(i));
+        }
+    }
+
+    [Fact]
+    public void DifferentConstructorParametersProduceDifferentPalette()
+    {
+        var provider1 = new GeneratedColorProvider(0.75, 0.95);
+        var provider2 = new GeneratedColorProvider(0.15, 0.95);
+
+        bool foundDifference = false;
+
+        for (int i = 0; i < 50; i++)
+        {
+            if (provider1.GetColor(i) != provider2.GetColor(i))
+            {
+                foundDifference = true;
+                break;
+            }
+        }
+
+        Assert.True(foundDifference);
+    }
+
+    [Fact]
+    public void SaturationParameterChangesPalette()
+    {
+        var provider1 = new GeneratedColorProvider(0.75, 0.95);
+        var provider2 = new GeneratedColorProvider(0.75, 0.40);
+
+        bool foundDifference = false;
+
+        for (int i = 0; i < 50; i++)
+        {
+            if (provider1.GetColor(i) != provider2.GetColor(i))
+            {
+                foundDifference = true;
+                break;
+            }
+        }
+
+        Assert.True(foundDifference);
+    }
+
+    [Fact]
+    public void SequentialColorsAreNotEqual()
+    {
+        var provider = new GeneratedColorProvider();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            Assert.NotEqual(
+                provider.GetColor(i),
+                provider.GetColor(i + 1));
+        }
+    }
+
+    [Fact]
+    public void LargeNumberOfGeneratedColorsAreUnique()
+    {
+        var provider = new GeneratedColorProvider();
+
+        var colors = new HashSet<Color>();
+
+        for (int i = 0; i < 500; i++)
+        {
+            Assert.True(colors.Add(provider.GetColor(i)),
+                $"Duplicate color generated at index {i}");
+        }
+    }
+
+    [Fact]
+    public void ColorComponentsRemainWithinValidRange()
+    {
+        var provider = new GeneratedColorProvider();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            Color c = provider.GetColor(i);
+
+            Assert.InRange(c.A, 0, 255);
+            Assert.InRange(c.R, 0, 255);
+            Assert.InRange(c.G, 0, 255);
+            Assert.InRange(c.B, 0, 255);
+        }
+    }
+
+    [Fact]
+    public void ColorsAreFullyOpaque()
+    {
+        var provider = new GeneratedColorProvider();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            Assert.Equal(255, provider.GetColor(i).A);
+        }
+    }
+
+    [Fact]
+    public void NegativeIndexesThrowArgumentOutOfRangeException()
+    {
+        var provider = new GeneratedColorProvider();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => provider.GetColor(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => provider.GetColor(-123));
+        Assert.Throws<ArgumentOutOfRangeException>(() => provider.GetColor(int.MinValue));
+    }
+
+    [Fact]
+    public void LargeIndexesRemainDeterministic()
+    {
+        var provider = new GeneratedColorProvider();
+
+        int[] indexes =
+        {
+                100000,
+                500000,
+                1000000,
+                int.MaxValue
+            };
+
+        foreach (int index in indexes)
+        {
+            Color expected = provider.GetColor(index);
+
+            Assert.Equal(expected, provider.GetColor(index));
+        }
+    }
+
+    [Fact]
+    public void FirstHundredSequentialColorsContainNoDuplicates()
+    {
+        var provider = new GeneratedColorProvider();
+
+        var set = new HashSet<Color>();
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.True(set.Add(provider.GetColor(i)));
+        }
+    }
+
+    [Fact]
+    public void FirstFiveHundredSequentialColorsContainNoDuplicates()
+    {
+        var provider = new GeneratedColorProvider();
+
+        var set = new HashSet<Color>();
+
+        for (int i = 0; i < 500; i++)
+        {
+            Assert.True(set.Add(provider.GetColor(i)));
+        }
+    }
+
+    [Fact]
+    public void RequestingColorsOutOfOrderProducesSameResults()
+    {
+        var provider = new GeneratedColorProvider();
+
+        Color a = provider.GetColor(100);
+        Color b = provider.GetColor(5);
+        Color c = provider.GetColor(999);
+        Color d = provider.GetColor(42);
+
+        Assert.Equal(a, provider.GetColor(100));
+        Assert.Equal(b, provider.GetColor(5));
+        Assert.Equal(c, provider.GetColor(999));
+        Assert.Equal(d, provider.GetColor(42));
+    }
+
+    [Fact]
+    public void RepeatedCallsDoNotChangePreviouslyGeneratedColors()
+    {
+        var provider = new GeneratedColorProvider();
+
+        Color expected = provider.GetColor(7);
+
+        for (int i = 0; i < 10000; i++)
+        {
+            provider.GetColor(i);
+        }
+
+        Assert.Equal(expected, provider.GetColor(7));
+    }
+
+    [Theory]
+    [InlineData(0.00, 0.10)]
+    [InlineData(0.00, 1.00)]
+    [InlineData(0.25, 0.50)]
+    [InlineData(0.50, 0.75)]
+    [InlineData(0.75, 0.95)]
+    [InlineData(1.00, 1.00)]
+    public void VariousConstructorParametersProduceValidColors(double hue, double saturation)
+    {
+        var provider = new GeneratedColorProvider(hue, saturation);
+
+        for (int i = 0; i < 100; i++)
+        {
+            Color color = provider.GetColor(i);
+
+            Assert.InRange(color.R, 0, 255);
+            Assert.InRange(color.G, 0, 255);
+            Assert.InRange(color.B, 0, 255);
+            Assert.Equal(255, color.A);
+        }
+    }
+
+    [Fact]
+    public void AdjacentColorsHaveDifferentArgbValues()
+    {
+        var provider = new GeneratedColorProvider();
+
+        for (int i = 0; i < 500; i++)
+        {
+            Assert.NotEqual(
+                provider.GetColor(i).ToArgb(),
+                provider.GetColor(i + 1).ToArgb());
+        }
+    }
 }

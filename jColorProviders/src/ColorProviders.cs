@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace jColorProviders
 {
+    // Stores corrolations between sources and the color for that source
     public class LogPattern
     {
         public Regex regex { get; }
@@ -105,6 +106,52 @@ namespace jColorProviders
             }
 
             return count;
+        }
+    }
+    public class GeneratedColorProvider : IColorProvider<int>
+    {
+        private const double GoldenRatio = 0.618033988749895;
+
+        private readonly double _saturation;
+        private readonly double _value;
+
+        public GeneratedColorProvider(double saturation = 0.75, double value = 0.95)
+        {
+            _saturation = saturation;
+            _value = value;
+        }
+
+        public Color GetColor(int index)
+        {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            double hue = (index * GoldenRatio) % 1.0;
+
+            return FromHSV(hue * 360.0, _saturation, _value);
+        }
+
+
+        private static Color FromHSV(double hue, double saturation, double value)
+        {
+            int hi = (int)Math.Floor(hue / 60) % 6;
+
+            double f = hue / 60 - Math.Floor(hue / 60);
+
+            double v = value * 255;
+            double p = v * (1 - saturation);
+            double q = v * (1 - f * saturation);
+            double t = v * (1 - (1 - f) * saturation);
+
+            return hi switch
+            {
+                0 => Color.FromArgb(255, (int)v, (int)t, (int)p),
+                1 => Color.FromArgb(255, (int)q, (int)v, (int)p),
+                2 => Color.FromArgb(255, (int)p, (int)v, (int)t),
+                3 => Color.FromArgb(255, (int)p, (int)q, (int)v),
+                4 => Color.FromArgb(255, (int)t, (int)p, (int)v),
+                _ => Color.FromArgb(255, (int)v, (int)p, (int)q)
+            };
         }
     }
 }

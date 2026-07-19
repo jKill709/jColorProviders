@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="LICENSE (MIT)" />
+    <File Path="README.md" />
+  </Folder>
   <Project Path="jColorProviders/jColorProviders.csproj" />
   <Project Path="jColorProviders_UnitTests/jColorProviders_UnitTests.csproj" Id="85e71a1a-eae6-4d02-ab6c-825e9560ff47" />
 </Solution>
