@@ -958,3 +958,299 @@ public class FixedHashColorProviderTests
         }
     }
 }
+
+public abstract class ColorModifyingProviderTests
+{
+    /// <summary>
+    /// Implemented by derived test classes.
+    /// </summary>
+    protected abstract IColorProvider<Color> CreateProvider();
+
+    [Fact]
+    public void GetColor_Should_NotThrow_ForBlack()
+    {
+        var provider = CreateProvider();
+
+        var result = provider.GetColor(Color.Black);
+
+        Assert.True(result.IsKnownColor || result.IsNamedColor || result.A != 0);
+    }
+
+    [Fact]
+    public void GetColor_Should_NotThrow_ForWhite()
+    {
+        var provider = CreateProvider();
+
+        var result = provider.GetColor(Color.White);
+
+        Assert.True(result.IsKnownColor || result.IsNamedColor || result.A != 0);
+    }
+
+    [Fact]
+    public void GetColor_Should_NotThrow_ForTransparent()
+    {
+        var provider = CreateProvider();
+
+        var result = provider.GetColor(Color.Transparent);
+
+        Assert.NotNull(result);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(255, 255, 255)]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(255, 255, 0)]
+    [InlineData(255, 0, 255)]
+    [InlineData(0, 255, 255)]
+    [InlineData(127, 127, 127)]
+    [InlineData(10, 40, 200)]
+    [InlineData(200, 100, 20)]
+    public void GetColor_Should_ReturnValidColor(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color result = provider.GetColor(Color.FromArgb(r, g, b));
+
+        Assert.InRange(result.A, 0, 255);
+        Assert.InRange(result.R, 0, 255);
+        Assert.InRange(result.G, 0, 255);
+        Assert.InRange(result.B, 0, 255);
+    }
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(100, 150, 200)]
+    [InlineData(5, 10, 15)]
+    public void GetColor_Should_BeDeterministic(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color input = Color.FromArgb(r, g, b);
+
+        Color first = provider.GetColor(input);
+        Color second = provider.GetColor(input);
+
+        Assert.Equal(first, second);
+    }
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(127, 127, 127)]
+    [InlineData(30, 80, 200)]
+    public void GetColor_Should_ReturnOpaqueColor(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color result = provider.GetColor(Color.FromArgb(r, g, b));
+
+        Assert.Equal(255, result.A);
+    }
+
+    [Fact]
+    public void GetColor_Should_WorkForEveryGrayLevel()
+    {
+        var provider = CreateProvider();
+
+        for (int i = 0; i <= 255; i++)
+        {
+            Color result = provider.GetColor(Color.FromArgb(i, i, i));
+
+            Assert.InRange(result.R, 0, 255);
+            Assert.InRange(result.G, 0, 255);
+            Assert.InRange(result.B, 0, 255);
+        }
+    }
+
+    [Fact]
+    public void MultipleCalls_Should_NotChangeBehavior()
+    {
+        var provider = CreateProvider();
+
+        Color input = Color.CornflowerBlue;
+
+        Color expected = provider.GetColor(input);
+
+        for (int i = 0; i < 1000; i++)
+        {
+            Assert.Equal(expected, provider.GetColor(input));
+        }
+    }
+
+    [Fact]
+    public void Provider_Should_HandleManyColors()
+    {
+        var provider = CreateProvider();
+
+        for (int r = 0; r <= 255; r += 31)
+        {
+            for (int g = 0; g <= 255; g += 31)
+            {
+                for (int b = 0; b <= 255; b += 31)
+                {
+                    Color result = provider.GetColor(Color.FromArgb(r, g, b));
+
+                    Assert.InRange(result.A, 0, 255);
+                }
+            }
+        }
+    }
+}
+public class TextColorProviderTests : ColorModifyingProviderTests
+{
+    protected override IColorProvider<Color> CreateProvider()
+        => new TextColorProvider();
+
+    [Fact]
+    public void BlackBackground_ReturnsWhite()
+    {
+        var provider = CreateProvider();
+
+        Assert.Equal(Color.White, provider.GetColor(Color.Black));
+    }
+
+    [Fact]
+    public void WhiteBackground_ReturnsBlack()
+    {
+        var provider = CreateProvider();
+
+        Assert.Equal(Color.Black, provider.GetColor(Color.White));
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(25, 25, 25)]
+    [InlineData(64, 64, 64)]
+    [InlineData(40, 90, 200)]
+    [InlineData(120, 30, 40)]
+    public void DarkColors_ReturnWhiteText(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Assert.Equal(Color.White, provider.GetColor(Color.FromArgb(r, g, b)));
+    }
+
+    [Theory]
+    [InlineData(255, 255, 255)]
+    [InlineData(240, 240, 240)]
+    [InlineData(230, 220, 210)]
+    [InlineData(255, 255, 128)]
+    [InlineData(220, 180, 150)]
+    public void LightColors_ReturnBlackText(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Assert.Equal(Color.Black, provider.GetColor(Color.FromArgb(r, g, b)));
+    }
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(120, 120, 120)]
+    [InlineData(200, 100, 50)]
+    public void ReturnedColor_IsAlwaysBlackOrWhite(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color result = provider.GetColor(Color.FromArgb(r, g, b));
+
+        Assert.True(result == Color.Black || result == Color.White);
+    }
+}
+public class MostVisibleColorProviderTests : ColorModifyingProviderTests
+{
+    protected override IColorProvider<Color> CreateProvider()
+        => new MostVisibleColorProvider();
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(128, 128, 128)]
+    [InlineData(10, 50, 200)]
+    public void ReturnedColor_IsNotIdenticalToInput(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color input = Color.FromArgb(r, g, b);
+
+        Assert.NotEqual(input, provider.GetColor(input));
+    }
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(80, 80, 80)]
+    public void ReturnedColor_HasGreaterContrastThanInput(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color input = Color.FromArgb(r, g, b);
+        Color result = provider.GetColor(input);
+
+        double selfContrast = ContrastRatio(input, input);
+        double resultContrast = ContrastRatio(input, result);
+
+        Assert.True(resultContrast > selfContrast);
+    }
+
+    [Fact]
+    public void ComplementaryColors_HaveHighContrast()
+    {
+        var provider = CreateProvider();
+
+        Color result = provider.GetColor(Color.Red);
+
+        Assert.True(ContrastRatio(Color.Red, result) >= 4.5);
+    }
+
+    [Theory]
+    [InlineData(255, 0, 0)]
+    [InlineData(0, 255, 0)]
+    [InlineData(0, 0, 255)]
+    [InlineData(128, 128, 128)]
+    [InlineData(192, 192, 192)]
+    public void HandlesSaturatedAndDesaturatedColors(int r, int g, int b)
+    {
+        var provider = CreateProvider();
+
+        Color result = provider.GetColor(Color.FromArgb(r, g, b));
+
+        Assert.NotEqual(Color.Empty, result);
+    }
+
+    private static double ContrastRatio(Color a, Color b)
+    {
+        double l1 = RelativeLuminance(a);
+        double l2 = RelativeLuminance(b);
+
+        if (l1 < l2)
+            (l1, l2) = (l2, l1);
+
+        return (l1 + .05) / (l2 + .05);
+    }
+
+    private static double RelativeLuminance(Color c)
+    {
+        static double Channel(double v)
+        {
+            v /= 255.0;
+            return v <= 0.03928
+                ? v / 12.92
+                : Math.Pow((v + .055) / 1.055, 2.4);
+        }
+
+        return
+            0.2126 * Channel(c.R) +
+            0.7152 * Channel(c.G) +
+            0.0722 * Channel(c.B);
+    }
+}

@@ -23,6 +23,7 @@ namespace jColorProviders
         Color GetColor(T source);
     }
 
+    // Direct Value Providers
     public class RegexColorProvider : IColorProvider<string>
     {
         private readonly List<LogPattern> _patterns = new();
@@ -240,6 +241,61 @@ namespace jColorProviders
                 4 => Color.FromArgb(255, (int)t, (int)p, (int)v),
                 _ => Color.FromArgb(255, (int)v, (int)p, (int)q)
             };
+        }
+    }
+
+    // Color-Modifying providers
+    public class TextColorProvider : IColorProvider<Color>
+    {
+        public Color GetColor(Color background)
+        {
+            double luminance = GetRelativeLuminance(background);
+
+            return luminance > 0.179
+                ? Color.Black
+                : Color.White;
+        }
+
+        protected static double GetRelativeLuminance(Color color)
+        {
+            double r = Linearize(color.R / 255.0);
+            double g = Linearize(color.G / 255.0);
+            double b = Linearize(color.B / 255.0);
+
+            return
+                0.2126 * r +
+                0.7152 * g +
+                0.0722 * b;
+        }
+
+        private static double Linearize(double value)
+        {
+            return value <= 0.03928
+                ? value / 12.92
+                : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+    }
+    public class MostVisibleColorProvider : TextColorProvider
+    {
+        public new Color GetColor(Color background)
+        {
+            double blackContrast = ContrastRatio(background, Color.Black);
+            double whiteContrast = ContrastRatio(background, Color.White);
+
+            return blackContrast >= whiteContrast
+                ? Color.Black
+                : Color.White;
+        }
+
+        private static double ContrastRatio(Color a, Color b)
+        {
+            double l1 = GetRelativeLuminance(a);
+            double l2 = GetRelativeLuminance(b);
+
+            double lighter = Math.Max(l1, l2);
+            double darker = Math.Min(l1, l2);
+
+            return (lighter + 0.05) / (darker + 0.05);
         }
     }
 }

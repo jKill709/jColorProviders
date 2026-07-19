@@ -21,6 +21,7 @@ public interface IColorProvider<T>
 
 ### Types of Providers
 
+- Direct Value Providers
 | Provider | Selection Method | Runtime Configurable |
 |---|---|---|
 | RegexColorProvider | Regex pattern matching | Yes |
@@ -29,6 +30,11 @@ public interface IColorProvider<T>
 | GeneratedColorProvider | Deterministic, destinct sequence generated from an int | No |
 | FixedHashColorProvider  | Deterministicly generated from a string | No |
 
+- Color-Modifying Providers
+| Provider | Intent |
+|---|---|
+| TextColorProvider | User provides backcolor, provider returns Black or white as text color |
+| MostVisibleColorProvider | User provides a color, provider returns highest contrast color |
 
 ### Choosing a Provider
 
@@ -52,6 +58,7 @@ Use `GeneratedColorProvider` when you want many visually distinct colors, genera
 
 Use `FixedHashColorProvider` when you want to use a string to deterministicly generate a Color based on a string.
 
+Use Color-Modifying Providers to help select colors for text and background that will work with runtime-selected colors
 
 ### Provider Details
 - RegexColorProvider
@@ -142,6 +149,17 @@ Use `FixedHashColorProvider` when you want to use a string to deterministicly ge
         Color color3 = colors.GetColor("MainModule");           // Same as color1
         ```
 
+- Color-Modifying Providers
+    - Returns colors meant to be readable, visible or otherwise contrast against the supplied color
+
+        Basic Usage
+        ```csharp
+        textColors = new TextColorProvider();
+        visibleColors = new MostVisibleColorProvider();
+        
+        textBox1.ForeColor = textColors.GetColor(textBox1.BackColor)
+        panel.BackColor = visibleColors.GetColor(form.BackColor)
+        ```
 
 ## Installation
 
