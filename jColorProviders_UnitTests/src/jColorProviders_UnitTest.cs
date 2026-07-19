@@ -731,3 +731,230 @@ public class GeneratedColorProviderTests
         }
     }
 }
+
+public class FixedHashColorProviderTests
+{
+    [Fact]
+    public void Same_String_Returns_Same_Color()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Color first = provider.GetColor("MainModule");
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.Equal(first, provider.GetColor("MainModule"));
+        }
+    }
+
+    [Fact]
+    public void Different_Instances_With_Default_Settings_Return_Same_Color()
+    {
+        var provider1 = new FixedHashColorProvider();
+        var provider2 = new FixedHashColorProvider();
+
+        Assert.Equal(
+            provider1.GetColor("Networking"),
+            provider2.GetColor("Networking"));
+    }
+
+    [Fact]
+    public void Different_Instances_With_Same_Constructor_Parameters_Return_Same_Color()
+    {
+        var provider1 = new FixedHashColorProvider(0.60, 0.90);
+        var provider2 = new FixedHashColorProvider(0.60, 0.90);
+
+        Assert.Equal(
+            provider1.GetColor("Logger"),
+            provider2.GetColor("Logger"));
+    }
+
+    [Fact]
+    public void Changing_Saturation_Changes_Output_Color()
+    {
+        var provider1 = new FixedHashColorProvider(0.30, 0.85);
+        var provider2 = new FixedHashColorProvider(0.90, 0.85);
+
+        Assert.NotEqual(
+            provider1.GetColor("Renderer"),
+            provider2.GetColor("Renderer"));
+    }
+
+    [Fact]
+    public void Changing_Brightness_Changes_Output_Color()
+    {
+        var provider1 = new FixedHashColorProvider(0.75, 0.40);
+        var provider2 = new FixedHashColorProvider(0.75, 1.00);
+
+        Assert.NotEqual(
+            provider1.GetColor("Renderer"),
+            provider2.GetColor("Renderer"));
+    }
+
+    [Fact]
+    public void Returned_Color_Is_Always_Fully_Opaque()
+    {
+        var provider = new FixedHashColorProvider();
+
+        for (int i = 0; i < 500; i++)
+        {
+            Color color = provider.GetColor($"Item{i}");
+
+            Assert.Equal(255, color.A);
+        }
+    }
+
+    [Fact]
+    public void Large_Number_Of_Calls_Remain_Deterministic()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Dictionary<string, Color> expected = new();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            string key = $"Key{i}";
+            expected[key] = provider.GetColor(key);
+        }
+
+        foreach (var pair in expected)
+        {
+            Assert.Equal(pair.Value, provider.GetColor(pair.Key));
+        }
+    }
+
+    [Fact]
+    public void Similar_Strings_Do_Not_Produce_The_Same_Color()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Assert.NotEqual(
+            provider.GetColor("Module1"),
+            provider.GetColor("Module2"));
+    }
+
+    [Fact]
+    public void Case_Changes_Affect_Color()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Assert.NotEqual(
+            provider.GetColor("Logger"),
+            provider.GetColor("logger"));
+    }
+
+    [Fact]
+    public void Leading_Whitespace_Affects_Color()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Assert.NotEqual(
+            provider.GetColor("Module"),
+            provider.GetColor(" Module"));
+    }
+
+    [Fact]
+    public void Trailing_Whitespace_Affects_Color()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Assert.NotEqual(
+            provider.GetColor("Module"),
+            provider.GetColor("Module "));
+    }
+
+    [Fact]
+    public void Empty_String_Is_Deterministic()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Color first = provider.GetColor(string.Empty);
+        Color second = provider.GetColor(string.Empty);
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void Unicode_Strings_Are_Deterministic()
+    {
+        var provider = new FixedHashColorProvider();
+
+        const string text = "こんにちは世界";
+
+        Assert.Equal(
+            provider.GetColor(text),
+            provider.GetColor(text));
+    }
+
+    [Fact]
+    public void Long_Strings_Are_Deterministic()
+    {
+        var provider = new FixedHashColorProvider();
+
+        string text = new string('X', 10000);
+
+        Assert.Equal(
+            provider.GetColor(text),
+            provider.GetColor(text));
+    }
+
+    [Fact]
+    public void Provider_Can_Handle_Many_Unique_Inputs()
+    {
+        var provider = new FixedHashColorProvider();
+
+        HashSet<Color> colors = new();
+
+        for (int i = 0; i < 500; i++)
+        {
+            colors.Add(provider.GetColor($"Input_{i}"));
+        }
+
+        // We don't require every color to be unique,
+        // but excessive collisions would indicate a poor hash.
+        Assert.True(colors.Count > 300);
+    }
+
+    [Theory]
+    [InlineData(0.0, 0.0)]
+    [InlineData(0.0, 1.0)]
+    [InlineData(1.0, 0.0)]
+    [InlineData(1.0, 1.0)]
+    [InlineData(0.5, 0.5)]
+    public void Valid_Constructor_Values_Do_Not_Throw(
+        double saturation,
+        double brightness)
+    {
+        var provider = new FixedHashColorProvider(saturation, brightness);
+
+        Color color = provider.GetColor("Test");
+
+        Assert.Equal(255, color.A);
+    }
+
+    [Theory]
+    [InlineData(-0.01, 0.5)]
+    [InlineData(1.01, 0.5)]
+    [InlineData(0.5, -0.01)]
+    [InlineData(0.5, 1.01)]
+    public void Invalid_Constructor_Values_Throw(
+        double saturation,
+        double brightness)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new FixedHashColorProvider(saturation, brightness));
+    }
+
+    [Fact]
+    public void Repeated_Calls_Do_Not_Create_Different_Results()
+    {
+        var provider = new FixedHashColorProvider();
+
+        Color expected = provider.GetColor("PerformanceTest");
+
+        for (int i = 0; i < 10000; i++)
+        {
+            Assert.Equal(expected, provider.GetColor("PerformanceTest"));
+        }
+    }
+}

@@ -1,4 +1,6 @@
 ﻿using System.Drawing;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace jColorProviders
@@ -133,6 +135,92 @@ namespace jColorProviders
 
 
         private static Color FromHSV(double hue, double saturation, double value)
+        {
+            int hi = (int)Math.Floor(hue / 60) % 6;
+
+            double f = hue / 60 - Math.Floor(hue / 60);
+
+            double v = value * 255;
+            double p = v * (1 - saturation);
+            double q = v * (1 - f * saturation);
+            double t = v * (1 - (1 - f) * saturation);
+
+            return hi switch
+            {
+                0 => Color.FromArgb(255, (int)v, (int)t, (int)p),
+                1 => Color.FromArgb(255, (int)q, (int)v, (int)p),
+                2 => Color.FromArgb(255, (int)p, (int)v, (int)t),
+                3 => Color.FromArgb(255, (int)p, (int)q, (int)v),
+                4 => Color.FromArgb(255, (int)t, (int)p, (int)v),
+                _ => Color.FromArgb(255, (int)v, (int)p, (int)q)
+            };
+        }
+    }
+    public class FixedHashColorProvider : IColorProvider<string>
+    {
+        private const double GoldenRatio = 0.618033988749895;
+
+        private readonly double _saturation;
+        private readonly double _value;
+
+        public FixedHashColorProvider(double saturation = 0.70, double value = 0.85)
+        {
+            if (saturation < 0.0 || saturation > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(saturation),
+                    saturation,
+                    "Saturation must be between 0.0 and 1.0.");
+            }
+
+            if (value < 0.0 || value > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    value,
+                    "Value must be between 0.0 and 1.0.");
+            }
+
+            _saturation = saturation;
+            _value = value;
+        }
+
+
+        public Color GetColor(string source)
+        {
+            if (string.IsNullOrEmpty(source))
+                return Color.Gray;
+
+            ulong hash = HashString(source);
+
+            // Convert hash into a stable hue
+            double hue = ((hash % 1000000) / 1000000.0);
+
+            // Spread similar hashes apart
+            hue = (hue + GoldenRatio * (hash % 97)) % 1.0;
+
+            return FromHSV(
+                hue * 360.0,
+                _saturation,
+                _value);
+        }
+
+
+        private static ulong HashString(string input)
+        {
+            using SHA256 sha = SHA256.Create();
+
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            byte[] hash = sha.ComputeHash(bytes);
+
+            return BitConverter.ToUInt64(hash, 0);
+        }
+
+
+        private static Color FromHSV(
+            double hue,
+            double saturation,
+            double value)
         {
             int hi = (int)Math.Floor(hue / 60) % 6;
 

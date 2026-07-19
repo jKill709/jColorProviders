@@ -26,7 +26,9 @@ public interface IColorProvider<T>
 | RegexColorProvider | Regex pattern matching | Yes |
 | IndexedColorProvider | User-defined color sequence | Yes |
 | FixedIndexColorProvider | Hard-Coded color sequence | No |
-| GeneratedColorProvider | Deterministic, destinct sequence | No |
+| GeneratedColorProvider | Deterministic, destinct sequence generated from an int | No |
+| FixedHashColorProvider  | Deterministicly generated from a string | No |
+
 
 ### Choosing a Provider
 
@@ -48,12 +50,14 @@ Use `FixedIndexColorProvider` when you need repeatable colors from standard CV p
 
 Use `GeneratedColorProvider` when you want many visually distinct colors, generated deterministicly at runtime.
 
+Use `FixedHashColorProvider` when you want to use a string to deterministicly generate a Color based on a string.
+
 
 ### Provider Details
 - RegexColorProvider
     Returns colors based on matching Regex patterns loaded at runtime
 
-        Basic usage
+        Basic Usage
         ```csharp
         colors = new RegexColorProvider();
         colors.AddPattern(new Regex(".*Hello.*", RegexOptions.Compiled), Color.Green);
@@ -66,7 +70,7 @@ Use `GeneratedColorProvider` when you want many visually distinct colors, genera
 - IndexedColorProvider
     Similar to the FixedColorProvider, but you may set the list of colors yourself
     
-        Basic usage
+        Basic Usage
         ```csharp
         colors = new IndexedColorProvider();
         colors.AddColor(Color.Green);
@@ -101,7 +105,7 @@ Use `GeneratedColorProvider` when you want many visually distinct colors, genera
 | 6 | Green (again) |
 | 7 | Blue (again) |
 
-        Basic usage
+        Basic Usage
         ```csharp
         colors = new FixedIndexColorProvider();
 
@@ -116,13 +120,28 @@ Use `GeneratedColorProvider` when you want many visually distinct colors, genera
    - Sequential colors shall be disimilar from each other
    - Constructor includes parameters for Hue and Saturation to tune pallete.
 
-        Basic usage
+        Basic Usage
         ```csharp
         colors = new GeneratedColorProvider(0.75, 0.95); // Default constructor values.  Not omitted for demonstration's sake.
 
         Color color1 = colors.GetColor(1);     // \ Disimilar from each
         Color color2 = colors.GetColor(2);     // /       other
         ```
+
+- FixedHashColorProvider
+    - Returns deterministicly generated colors from a string using a hash function.
+    - Each string shall always return the same color, given the same contructor parameters
+    - Constructor includes parameters for Hue and Saturation to tune pallete.
+
+        Basic Usage
+        ```csharp
+        colors = new FixedHashColorProvider(0.75, 0.85); // Default constructor values.  Not omitted for demonstration's sake.
+
+        Color color1 = colors.GetColor("MainModule");
+        Color color2 = colors.GetColor("Server_Networking");
+        Color color3 = colors.GetColor("MainModule");           // Same as color1
+        ```
+
 
 ## Installation
 
