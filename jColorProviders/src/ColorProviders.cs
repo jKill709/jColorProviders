@@ -30,6 +30,12 @@ namespace jColorProviders
 
         public void AddPattern(Regex pattern, Color color)
         {
+            if ((color == null) || (color == default))
+            {
+                FixedHashColorProvider provider = new FixedHashColorProvider();
+                color = provider.GetColor(pattern.ToString());
+            }
+            
             _patterns.Add(new LogPattern(pattern, color));
         }
         public void RemovePattern(Regex pattern)
