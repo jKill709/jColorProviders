@@ -28,6 +28,10 @@ namespace jColorProviders
         {
             _patterns.Add(new LogPattern(pattern, color));
         }
+        public void RemovePattern(Regex pattern)
+        {
+            _patterns.RemoveAll(p => p.regex.ToString() == pattern.ToString());
+        }
 
         public Color GetColor(string source)
         {
