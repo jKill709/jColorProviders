@@ -28,6 +28,13 @@ namespace jColorProviders
     {
         private readonly List<LogPattern> _patterns = new();
 
+        public RegexColorProvider()
+        {
+        }
+        public RegexColorProvider(RegexColorProvider other)
+        {
+            _patterns.AddRange(other._patterns);
+        }
         public void AddPattern(Regex pattern, Color color)
         {
             if ((color == null) || (color == default))
@@ -71,21 +78,30 @@ namespace jColorProviders
     {
         private readonly List<Color> _colors = new();
 
+        public IndexedColorProvider(Color color)
+        {
+            _colors.Add(color);
+        }
+        public IndexedColorProvider(List<Color> colors)
+        {
+            _colors = colors;
+        }
+        public IndexedColorProvider(IndexedColorProvider other)
+        {
+            _colors.AddRange(other._colors);
+        }
         public void AddColor(Color color)
         {
             _colors.Add(color);
         }
-
         public void AddColors(params Color[] colors)
         {
             _colors.AddRange(colors);
         }
-
         public void Clear()
         {
             _colors.Clear();
         }
-
         public int Count => _colors.Count;
 
         public Color GetColor(int index)
@@ -128,6 +144,11 @@ namespace jColorProviders
         {
             _saturation = saturation;
             _value = value;
+        }
+        public GeneratedColorProvider(GeneratedColorProvider other)
+        {
+            _saturation = other._saturation;
+            _value = other._value;
         }
 
         public Color GetColor(int index)
