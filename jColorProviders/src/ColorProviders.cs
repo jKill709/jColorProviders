@@ -11,10 +11,10 @@ namespace jColorProviders
         public Regex regex { get; }
         public Color? color { get; }
 
-        public LogPattern(Regex pattern, Color color)
+        public LogPattern(Regex pattern, Color inColor)
         {
             regex = pattern;
-            this.color = color;
+            color = inColor;
         }
     }
 
